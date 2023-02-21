@@ -1,4 +1,4 @@
-package org.example;
+package org.tools;
 
 import java.io.*;
 import java.util.Scanner;
@@ -80,6 +80,7 @@ public class ClassProcessor {
             //check if file exists
 
             if (!file.isFile()){
+                System.out.println("Erreur inconnue, file =" + file.toString());
                 return;
             }
 
