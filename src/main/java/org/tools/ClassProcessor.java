@@ -1,4 +1,4 @@
-package org.example;
+package org.tools;
 
 import java.io.*;
 import java.util.Scanner;
@@ -7,9 +7,11 @@ import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
 import spoon.Launcher;
 import spoon.reflect.declaration.CtClass;
-public class Main {
+public class ClassProcessor {
 
     public static void main(String[] args) throws ParseException {
+
+        System.out.println("Start tools");
         CommandLine cmd;
         String srcDir = "";
         String targetDir = "";
