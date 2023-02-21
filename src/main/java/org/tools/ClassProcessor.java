@@ -1,4 +1,4 @@
-package org.tools;
+package org.example;
 
 import java.io.*;
 import java.util.Scanner;
