@@ -1,12 +1,18 @@
 package org.tools;
 
 import java.io.*;
+import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
 import spoon.Launcher;
-import spoon.reflect.declaration.CtClass;
+import spoon.reflect.CtModel;
+import spoon.reflect.declaration.*;
+import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.filter.TypeFilter;
+
 public class ClassProcessor {
 
     public static void main(String[] args) throws ParseException {
@@ -96,7 +102,7 @@ public class ClassProcessor {
                 }
 
                 //then we write the file
-                writeFile(targetDir, clazzValue, packageName);
+                writeFile(targetDir, clazzValue, packageName, file.getAbsolutePath());
 
             } catch (IOException e) {
 
@@ -130,17 +136,17 @@ public class ClassProcessor {
         }
         return clazzValue;
     }
-    private static void writeFile(String pathdir, String clazzValue, String packageName) throws FileNotFoundException, UnsupportedEncodingException {
+    private static void writeFile(String pathdir, String clazzValue, String packageName, String path)
+            throws FileNotFoundException, UnsupportedEncodingException {
 
         //configuring spoon launcher
         final Launcher launcher = new Launcher();
         launcher.getEnvironment().setNoClasspath(true);
         launcher.getEnvironment().setAutoImports(true);
-
+        launcher.addInputResource(path);
         //parse the class
         CtClass parsedClass = launcher.parseClass(clazzValue);
 
-        //
         String className = parsedClass.getSimpleName().replaceAll("Json$", "");
         //create a new file write
         PrintWriter javaWriter = new PrintWriter(pathdir + className +".java", "UTF-8");
@@ -160,7 +166,7 @@ public class ClassProcessor {
                     .forEach( imp -> javaWriter.println(imp));
         }
         scanner.close();
-
+        //parsedClass
 
         //class signature
         javaWriter.println(parsedClass.getVisibility().name().toLowerCase() + " class " + className + "{");
@@ -179,11 +185,9 @@ public class ClassProcessor {
             String constructor = cons.toString()
                     .replaceAll("@.*", "")
                     .replaceAll("Json", "");
-                    //.replaceAll("Json\\(\\)", "()");
-            //System.out.println(constructor);
-            javaWriter.println(constructor);
+            //System.out.println("public " + constructor);
+            javaWriter.println("public " +constructor);
         }
-
         //methods
         for ( Object method : parsedClass.getMethods()){
             String func = method.toString()
