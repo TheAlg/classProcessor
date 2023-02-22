@@ -1,16 +1,9 @@
 package org.tools;
 
 import java.io.*;
-import java.util.List;
-import java.util.Scanner;
-import java.util.regex.Pattern;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
 import org.models.TreeClass;
-import spoon.Launcher;
-import spoon.reflect.CtModel;
-import spoon.reflect.declaration.*;
-import spoon.reflect.visitor.filter.TypeFilter;
 
 public class ClassProcessor {
 
@@ -139,6 +132,7 @@ public class ClassProcessor {
     private static void writeFile(String targetDir, String clazzValue, String packageName, String filePath)
             throws FileNotFoundException, UnsupportedEncodingException {
 
+        StringBuilder stringBuilder = new StringBuilder();
         // our parser object
         TreeClass treeClass = new TreeClass(clazzValue, filePath);
 
@@ -146,27 +140,23 @@ public class ClassProcessor {
         PrintWriter javaWriter = new PrintWriter(targetDir + treeClass.getName() +".java", "UTF-8");
 
         //write the package name
-        javaWriter.println("package "+packageName+";" + System.lineSeparator());
+        stringBuilder.append("package "+packageName+";" + "\n\n")
+                //write the imports
+                .append(treeClass.getImports()  + "\n")
+                //class signature
+                .append(treeClass.getVisibility() + " class " + treeClass.getName() + " {" + "\n\n")
+                //write attributes
+                .append(treeClass.getAttributes())
+                //write constructors
+                .append(treeClass.getConstructors())
+                //write enums if any
+                .append(treeClass.getEnums())
+                //write methods
+                .append(treeClass.getMethods())
+                //close class
+                .append("}");
 
-        //write the imports
-        javaWriter.println(treeClass.getImports());
-
-        //class signature
-        javaWriter.println(treeClass.getVisibility() + " class " + treeClass.getName() + " {");
-
-        //write attributes
-        javaWriter.println(treeClass.getAttributes());
-
-        //write enums if any
-        javaWriter.println(treeClass.getEnums());
-
-        //write constructors
-        javaWriter.println(treeClass.getConstructors());
-
-        //write methods
-        javaWriter.println(treeClass.getMethods());
-
-        javaWriter.println("}");
+        javaWriter.write(stringBuilder.toString());
         javaWriter.close();
 
         System.out.println("class " +treeClass.getName() + " has been successfully written in the given directory");

@@ -4,11 +4,8 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtEnum;
-import spoon.reflect.declaration.CtImport;
 import spoon.reflect.visitor.filter.TypeFilter;
-
 import java.util.List;
-import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class TreeClass {
@@ -45,66 +42,71 @@ public class TreeClass {
             System.out.println(ctImport.toString());
         }*/
         // using regex instead of spoon
-        var wrapper = new Object(){ String value = ""; };
+        var wrapper = new Object(){ StringBuilder value = new StringBuilder(); };
         Pattern imports = Pattern.compile("import (.*?);");
         imports.matcher(classValue)
                 .results()
                 .map(mr -> mr.group())
                 //write all imports
-                .forEach( (imp) -> wrapper.value += imp + System.lineSeparator());
-        return wrapper.value;
+                .forEach( (imp) -> {
+                    wrapper.value.append(imp).append(System.lineSeparator());
+                });
+        return wrapper.value.toString();
     }
 
     public String getAttributes(){
-        String results = "";
+        StringBuilder results = new StringBuilder();
         for ( Object att : this.parsedClass.getFields()){
             String attribute = att.toString()
                     .replaceAll("@.*", "")
                     .replaceAll("Json", "");
-            //System.out.println(attribute);
-            results += attribute;
+            results.append("\t").append(attribute.trim() + System.lineSeparator());
+            System.out.println(results);
         }
-        return results + System.lineSeparator();
+        return results.append(System.lineSeparator()).toString();
     }
     public String getEnums(){
-        String results = "";
+        StringBuilder results = new StringBuilder();
         // get the enum declaration inside the class
         List<CtEnum> myEnum = this.parsedClass.getElements((new TypeFilter<>(CtEnum.class)));
         // print the enum name
         if (myEnum.size()>0 ){
             for (CtEnum ctEnum : myEnum) {
-                results += ctEnum.toString()
+                results.append(ctEnum.toString()
                         .replaceAll("@.*", "")
                         .replaceAll("Json", "")
-                        +System.lineSeparator();
+                        .replaceAll("(?m)^", "\t"))
+                        .append(System.lineSeparator());
             }
         }
-        return results;
+        return  results.toString();
     }
 
     public String getConstructors(){
-        String results = "";
+        StringBuilder results = new StringBuilder();
         for( Object cons : parsedClass.getConstructors()){
             String constructor = cons.toString()
                     .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
+                    .replaceAll("Json", "")
+                    .replaceAll("(?m)^", "\t");
             //System.out.println("public " + constructor);
             constructor = constructor.contains("public") ?
                         constructor : "public "+constructor;
-            results += constructor;
+            results.append("\t"+constructor + System.lineSeparator());
         }
-        return results;
+        return results.toString();
     }
 
     public String getMethods(){
-        String results = "";
+        StringBuilder results = new StringBuilder();
         for ( Object method : parsedClass.getMethods()){
             String func = method.toString()
                     .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
-            results += func + System.lineSeparator();
+                    .replaceAll("Json", "")
+                    .replaceAll("(?m)^", "\t");
+            results.append( func + System.lineSeparator());
         }
 
-        return results;
+        return results.toString();
     }
 }
