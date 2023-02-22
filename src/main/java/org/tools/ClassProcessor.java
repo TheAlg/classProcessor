@@ -3,14 +3,13 @@ package org.tools;
 import java.io.*;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
+import org.models.TreeClass;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.*;
-import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 public class ClassProcessor {
@@ -82,6 +81,7 @@ public class ClassProcessor {
 
         File[] contents = srcFile.listFiles();
         System.out.println("processing "+ contents.length + " files");
+
         for (File file : contents) {
             //check if file exists
 
@@ -136,71 +136,40 @@ public class ClassProcessor {
         }
         return clazzValue;
     }
-    private static void writeFile(String pathdir, String clazzValue, String packageName, String path)
+    private static void writeFile(String targetDir, String clazzValue, String packageName, String filePath)
             throws FileNotFoundException, UnsupportedEncodingException {
 
-        //configuring spoon launcher
-        final Launcher launcher = new Launcher();
-        launcher.getEnvironment().setNoClasspath(true);
-        launcher.getEnvironment().setAutoImports(true);
-        launcher.addInputResource(path);
-        //parse the class
-        CtClass parsedClass = launcher.parseClass(clazzValue);
+        // our parser object
+        TreeClass treeClass = new TreeClass(clazzValue, filePath);
 
-        String className = parsedClass.getSimpleName().replaceAll("Json$", "");
         //create a new file write
-        PrintWriter javaWriter = new PrintWriter(pathdir + className +".java", "UTF-8");
+        PrintWriter javaWriter = new PrintWriter(targetDir + treeClass.getName() +".java", "UTF-8");
 
         //write the package name
-        javaWriter.println("package "+packageName+";");
+        javaWriter.println("package "+packageName+";" + System.lineSeparator());
 
-        //managing imports from pure string
-        Pattern imports = Pattern.compile("import (.*?);");
-        Scanner scanner = new Scanner(clazzValue);
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            imports.matcher(line)
-                    .results()
-                    .map(mr -> mr.group())
-                    //write all imports
-                    .forEach( imp -> javaWriter.println(imp));
-        }
-        scanner.close();
-        //parsedClass
+        //write the imports
+        javaWriter.println(treeClass.getImports());
 
         //class signature
-        javaWriter.println(parsedClass.getVisibility().name().toLowerCase() + " class " + className + "{");
-        //attributes
-        for ( Object att : parsedClass.getFields()){
-            String attribute = att.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
-            //System.out.println(attribute);
-            javaWriter.println(attribute);
+        javaWriter.println(treeClass.getVisibility() + " class " + treeClass.getName() + " {");
 
-        }
+        //write attributes
+        javaWriter.println(treeClass.getAttributes());
 
-        //constructors
-        for( Object cons : parsedClass.getConstructors()){
-            String constructor = cons.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
-            //System.out.println("public " + constructor);
-            javaWriter.println("public " +constructor);
-        }
-        //methods
-        for ( Object method : parsedClass.getMethods()){
-            String func = method.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
-            //System.out.println(func);
-            javaWriter.println(func);
-        }
+        //write enums if any
+        javaWriter.println(treeClass.getEnums());
+
+        //write constructors
+        javaWriter.println(treeClass.getConstructors());
+
+        //write methods
+        javaWriter.println(treeClass.getMethods());
 
         javaWriter.println("}");
         javaWriter.close();
 
-        System.out.println("class " +className + " has been successfully written in the given directory");
+        System.out.println("class " +treeClass.getName() + " has been successfully written in the given directory");
 
-    }
+}
 }
