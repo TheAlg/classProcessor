@@ -1,9 +1,12 @@
 package org.models;
 
+import org.apache.commons.lang3.StringUtils;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtEnum;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.factory.Factory;
 import spoon.reflect.visitor.filter.TypeFilter;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -13,6 +16,7 @@ public class TreeClass {
     CtClass parsedClass;
     CtModel ctModel;
     Launcher launcher;
+    String suffix = "";
 
 
 
@@ -29,9 +33,23 @@ public class TreeClass {
         launcher.getEnvironment().setAutoImports(true);
         launcher.addInputResource(filePath);
     }
+    public void setSuffix(String suffix){
+        this.suffix = StringUtils.capitalize(suffix);
+    }
+    public String getType() {
+        String type = null;
+        CtType<?> ctType = launcher.getFactory().Type().get(parsedClass.getQualifiedName());
+        if (ctType instanceof CtClass) {
+            type="class";
+        }
+        if (ctType instanceof CtEnum) {
+            type="enum";
+        }
+        return type;
+    }
 
     public String getName(){
-        return this.parsedClass.getSimpleName().replaceAll("Json$", "");
+        return this.parsedClass.getSimpleName().replaceAll("Json$", suffix);
     }
 
     public String getVisibility(){
@@ -59,9 +77,9 @@ public class TreeClass {
         for ( Object att : this.parsedClass.getFields()){
             String attribute = att.toString()
                     .replaceAll("@.*", "")
-                    .replaceAll("Json", "");
+                    .replaceAll("Json", suffix);
             results.append("\t").append(attribute.trim() + System.lineSeparator());
-            System.out.println(results);
+            //System.out.println(results);
         }
         return results.append(System.lineSeparator()).toString();
     }
@@ -74,7 +92,7 @@ public class TreeClass {
             for (CtEnum ctEnum : myEnum) {
                 results.append(ctEnum.toString()
                         .replaceAll("@.*", "")
-                        .replaceAll("Json", "")
+                        .replaceAll("Json", suffix)
                         .replaceAll("(?m)^", "\t"))
                         .append(System.lineSeparator());
             }
@@ -87,7 +105,7 @@ public class TreeClass {
         for( Object cons : parsedClass.getConstructors()){
             String constructor = cons.toString()
                     .replaceAll("@.*", "")
-                    .replaceAll("Json", "")
+                    .replaceAll("Json", suffix)
                     .replaceAll("(?m)^", "\t");
             //System.out.println("public " + constructor);
             constructor = constructor.contains("public") ?
@@ -102,7 +120,7 @@ public class TreeClass {
         for ( Object method : parsedClass.getMethods()){
             String func = method.toString()
                     .replaceAll("@.*", "")
-                    .replaceAll("Json", "")
+                    .replaceAll("Json", suffix)
                     .replaceAll("(?m)^", "\t");
             results.append( func + System.lineSeparator());
         }

@@ -7,43 +7,57 @@ import org.models.TreeClass;
 
 public class ClassProcessor {
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) {
 
         System.out.println("Start tools");
-        CommandLine cmd;
+        CommandLine dash;
+        CommandLine d_dash;
         String srcDir = "";
         String targetDir = "";
         String packageName = "";
+        String suffix= "";
 
 
         Options options = new Options();
-
         options.addOption("s", true, "source directory is required");
         options.addOption("t", true, "target directory is required");
         options.addOption("p", true, "package name is required");
+        options.addOption("suffix", true, "Suffix is used to replace 'Json' word");
+
+
+        //for double dash options
+        //Options d_options = new Options();
+        //d_options.addOption("suffix", false, "Suffix is used to replace 'Json' word");
 
 
         //Create a parser
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new PosixParser();
+        //CommandLineParser d_parser = new PosixParser();
+
         //parse the options passed as command line arguments
         try {
-            cmd = parser.parse( options, args);
-            if  (! cmd.hasOption("s")
-                    || ! cmd.hasOption("t")
-                    || ! cmd.hasOption("p")){
+            dash = parser.parse( options, args);
+            if  (! dash.hasOption("s")
+                    || ! dash.hasOption("t")
+                    || ! dash.hasOption("p")){
                 System.err.println("All options are required");
                 return;
             }
+            //for double dash prams
+            //d_dash = d_parser.parse(d_options, args);
+            suffix = dash.getOptionValue("suffix");
+
 
         } catch (ParseException e) {
-            System.err.println("All options require arguments");
+            e.printStackTrace();
             return;
         }
 
         //assigning the values;
-        srcDir = cmd.getOptionValue("s");
-        targetDir = cmd.getOptionValue("t");
-        packageName = cmd.getOptionValue("p");
+        srcDir = dash.getOptionValue("s");
+        targetDir = dash.getOptionValue("t");
+        packageName = dash.getOptionValue("p");
+
         // configuring file separator
         String fileSeparator = File.separator;
         if ( !targetDir.substring(targetDir.length() - 1).equals(fileSeparator) ){
@@ -93,9 +107,14 @@ public class ClassProcessor {
                 else if (FilenameUtils.getExtension(file.getPath()).equals("java")){
                     clazzValue = getFileValue(file.getAbsolutePath());
                 }
+                //our parsed object
+                TreeClass treeClass = new TreeClass(clazzValue, file.getAbsolutePath());
 
+                if (suffix != null && !suffix.isEmpty()){
+                    treeClass.setSuffix(suffix);
+                }
                 //then we write the file
-                writeFile(targetDir, clazzValue, packageName, file.getAbsolutePath());
+                writeFile(targetDir, treeClass, packageName);
 
             } catch (IOException e) {
 
@@ -129,30 +148,32 @@ public class ClassProcessor {
         }
         return clazzValue;
     }
-    private static void writeFile(String targetDir, String clazzValue, String packageName, String filePath)
+    private static void writeFile(String targetDir, TreeClass treeClass, String packageName)
             throws FileNotFoundException, UnsupportedEncodingException {
 
         StringBuilder stringBuilder = new StringBuilder();
-        // our parser object
-        TreeClass treeClass = new TreeClass(clazzValue, filePath);
 
         //create a new file write
         PrintWriter javaWriter = new PrintWriter(targetDir + treeClass.getName() +".java", "UTF-8");
 
         //write the package name
         stringBuilder.append("package "+packageName+";" + "\n\n")
-                //write the imports
-                .append(treeClass.getImports()  + "\n")
+                .append(treeClass.getImports()  + "\n");
                 //class signature
-                .append(treeClass.getVisibility() + " class " + treeClass.getName() + " {" + "\n\n")
-                //write attributes
-                .append(treeClass.getAttributes())
-                //write constructors
-                .append(treeClass.getConstructors())
+        if (treeClass.getType().equals("class")){
+            stringBuilder.append(treeClass.getVisibility() + " class " + treeClass.getName() + " {" + "\n\n");
+        }
+        if (treeClass.getType().equals("enum")){
+            stringBuilder.append(treeClass.getVisibility() + " enum " + treeClass.getName() + " {" + "\n\n");
+        }
+        stringBuilder.append(treeClass.getAttributes())
+                .append(treeClass.getConstructors());
                 //write enums if any
-                .append(treeClass.getEnums())
+        if (treeClass.getType().equals("class")) {
+            stringBuilder.append(treeClass.getEnums());
+        }
                 //write methods
-                .append(treeClass.getMethods())
+        stringBuilder.append(treeClass.getMethods())
                 //close class
                 .append("}");
 
