@@ -3,9 +3,7 @@ package org.models;
 import org.apache.commons.lang3.StringUtils;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
-import spoon.reflect.declaration.CtClass;
-import spoon.reflect.declaration.CtEnum;
-import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.*;
 import spoon.reflect.factory.Factory;
 import spoon.reflect.visitor.filter.TypeFilter;
 import java.util.List;
@@ -72,14 +70,27 @@ public class TreeClass {
         return wrapper.value.toString();
     }
 
-    public String getAttributes(){
+    public String getAttributes() {
         StringBuilder results = new StringBuilder();
-        for ( Object att : this.parsedClass.getFields()){
-            String attribute = att.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", suffix);
-            results.append("\t").append(attribute.trim() + System.lineSeparator());
-            //System.out.println(results);
+        if (this.getType().equals("enum")) {
+            List<CtEnum> myEnum = this.parsedClass.getElements((new TypeFilter<>(CtEnum.class)));
+            for (CtEnum ctEnum : myEnum) {
+                for (Object field : ctEnum.getEnumValues()) {
+                    String commaSyntax = ctEnum.getEnumValues().indexOf(field) == (ctEnum.getEnumValues().size() - 1) ?
+                            ";" : ",";
+                    results.append(this.sanitize(field.toString()) + commaSyntax)
+                            .append(System.lineSeparator());
+                }
+            }
+        }
+        for (Object att : this.parsedClass.getFields()) {
+            if (att instanceof CtField<?>) {
+                CtField<?> field = (CtField<?>) att;
+                if (!field.getType().isEnum()) {
+                    String attribute = this.sanitize(att.toString());
+                    results.append("\t").append(attribute.trim() + System.lineSeparator());
+                }
+            }
         }
         return results.append(System.lineSeparator()).toString();
     }
@@ -88,28 +99,28 @@ public class TreeClass {
         // get the enum declaration inside the class
         List<CtEnum> myEnum = this.parsedClass.getElements((new TypeFilter<>(CtEnum.class)));
         // print the enum name
-        if (myEnum.size()>0 ){
+        if (myEnum.size()>0){
             for (CtEnum ctEnum : myEnum) {
-                results.append(ctEnum.toString()
-                        .replaceAll("@.*", "")
-                        .replaceAll("Json", suffix)
-                        .replaceAll("(?m)^", "\t"))
+                results.append(this.sanitize(ctEnum.toString()))
                         .append(System.lineSeparator());
             }
         }
-        return  results.toString();
+        return results.toString();
     }
 
     public String getConstructors(){
         StringBuilder results = new StringBuilder();
         for( Object cons : parsedClass.getConstructors()){
-            String constructor = cons.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", suffix)
-                    .replaceAll("(?m)^", "\t");
+            String constructor = this.sanitize(cons.toString());
             //System.out.println("public " + constructor);
-            constructor = constructor.contains("public") ?
-                        constructor : "public "+constructor;
+            if (this.getType().equals("class")){
+                constructor = constructor.contains("public") ?
+                        constructor : "public"+constructor;
+            }
+            if (this.getType().equals("enum")){
+                constructor = constructor.contains("private") ?
+                        constructor : "private"+constructor;
+            }
             results.append("\t"+constructor + System.lineSeparator());
         }
         return results.toString();
@@ -118,13 +129,18 @@ public class TreeClass {
     public String getMethods(){
         StringBuilder results = new StringBuilder();
         for ( Object method : parsedClass.getMethods()){
-            String func = method.toString()
-                    .replaceAll("@.*", "")
-                    .replaceAll("Json", suffix)
-                    .replaceAll("(?m)^", "\t");
+            String func = this.sanitize(method.toString());
             results.append( func + System.lineSeparator());
+
         }
 
         return results.toString();
     }
+    public String sanitize(String s) {
+    return s.replaceAll("@.*", "")
+                .replaceAll("Json", suffix)
+                .replaceAll("(?m)^", "\t");
+    }
+
+
 }

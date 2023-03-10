@@ -158,21 +158,18 @@ public class ClassProcessor {
 
         //write the package name
         stringBuilder.append("package "+packageName+";" + "\n\n")
-                .append(treeClass.getImports()  + "\n");
+                .append(treeClass.getImports()  + "\n")
                 //class signature
-        if (treeClass.getType().equals("class")){
-            stringBuilder.append(treeClass.getVisibility() + " class " + treeClass.getName() + " {" + "\n\n");
-        }
-        if (treeClass.getType().equals("enum")){
-            stringBuilder.append(treeClass.getVisibility() + " enum " + treeClass.getName() + " {" + "\n\n");
-        }
-        stringBuilder.append(treeClass.getAttributes())
+                .append(treeClass.getVisibility() + " "+ treeClass.getType() + " " + treeClass.getName() + " {" + "\n\n")
+                .append(treeClass.getAttributes())
                 .append(treeClass.getConstructors());
-                //write enums if any
+
         if (treeClass.getType().equals("class")) {
             stringBuilder.append(treeClass.getEnums());
         }
-                //write methods
+        //System.out.println(treeClass.getConstructors());
+        //write enums if any
+        //write methods
         stringBuilder.append(treeClass.getMethods())
                 //close class
                 .append("}");
